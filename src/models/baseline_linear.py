@@ -14,7 +14,7 @@ baseline_linear = LinearRegression()
 
 baseline_linear.fit(X, y)
 
-baseline_model_loc = "../../trained_models/baseline_liner.pkl"
+baseline_model_loc = "../../trained_models/baseline_linear.pkl"
 
 with open(baseline_model_loc, 'wb') as file:
     pickle.dump(baseline_linear, file)
