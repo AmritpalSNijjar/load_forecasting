@@ -52,7 +52,7 @@ def engineered_df_transformer(raw_data_df):
     # Holidays considered: New_Years_Day, Independence_Day, Thanksgiving_Day, Day_After_Thanksgiving, Christmas_Eve, Christmas_Day, New_Years_Eve
     list_of_notable_days = ["2020-01-01", "2020-07-04", "2020-11-26", "2020-11-27", "2020-12-24", "2020-12-25", "2020-12-31", 
                         "2021-01-01", "2021-07-04", "2021-11-25", "2021-11-26", "2021-12-24", "2021-12-25", "2021-12-31",
-                        "2023-01-01", "2023-07-04", "2023-11-23", "2023-11-24", "2023-12-24", "2023-12-25", "2023-12-31"]
+                        "2022-01-01", "2022-07-04", "2022-11-24", "2022-11-25", "2022-12-24", "2022-12-25", "2022-12-31"]
 
     notable_days = pd.to_datetime(list_of_notable_days)
 
@@ -115,7 +115,7 @@ def complete_df_transformer(raw_data_df):
     # Holidays considered: New_Years_Day, Independence_Day, Thanksgiving_Day, Day_After_Thanksgiving, Christmas_Eve, Christmas_Day, New_Years_Eve
     list_of_notable_days = ["2020-01-01", "2020-07-04", "2020-11-26", "2020-11-27", "2020-12-24", "2020-12-25", "2020-12-31", 
                         "2021-01-01", "2021-07-04", "2021-11-25", "2021-11-26", "2021-12-24", "2021-12-25", "2021-12-31",
-                        "2023-01-01", "2023-07-04", "2023-11-23", "2023-11-24", "2023-12-24", "2023-12-25", "2023-12-31"]
+                        "2022-01-01", "2022-07-04", "2022-11-24", "2022-11-25", "2022-12-24", "2022-12-25", "2022-12-31"]
 
     notable_days = pd.to_datetime(list_of_notable_days)
 
@@ -177,8 +177,5 @@ def complete_df_transformer(raw_data_df):
 
     # Add feature indicating notable days.
     df_transformed['is_notable_day'] = (df_transformed['timestamp'].dt.normalize().isin(notable_days)).astype(int)
-
-    cols_to_keep = ["Load", "Hour_sin", "Hour_cos", "Month", "Day", "temp_6h", "avg_region_ghi", "is_weekend", "is_notable_day", "CDH", "HDH", "Load_lag_1h", "Load_lag_2h", "Load_lag_3h", "Load_lag_24h"]
-    df_transformed = df_transformed[["timestamp"] + cols_to_keep]
 
     return df_transformed
