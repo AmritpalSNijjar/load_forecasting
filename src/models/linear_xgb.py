@@ -13,13 +13,29 @@ features_to_train_lin = ["Hour_sin", "Hour_cos", "Month", "Day", "temp_6h", "avg
 X = complete_train_df.drop(columns = ["Load", "timestamp"])
 y = complete_train_df["Load"]
 
+n_train_samples = len(X)
+initial_len = int(0.6 * n_train_samples)
+step_size = 24
+
+oos_residuals = np.full(n_train_samples, np.nan)
+
+for start in range(initial_len, n_train_samples, step_size):
+    end = min(start + step_size, n_train_samples)
+
+    wf_lin = LinearRegression()
+    wf_lin.fit(X.iloc[:start], y.iloc[:start])
+
+    preds = wf_lin.predict(X.iloc[start:end])
+
+    oos_residuals[start:end] = y.iloc[start:end] - preds
+
+mask = ~np.isnan(oos_residuals)
+
+xgboost_component = XGBRegressor(objective='reg:squarederror', n_estimators = 3, learning_rate = 0.05, max_depth = 50, subsample = 0.8, random_state=12)
+xgboost_component.fit(X.iloc[mask], oos_residuals[mask])
+
 linear_component = LinearRegression()
 linear_component.fit(X[features_to_train_lin], y)
-
-residuals = y - linear_component.predict(X[features_to_train_lin])
-
-xgboost_component = XGBRegressor( objective='reg:squarederror', n_estimators = 800, learning_rate = 0.05, max_depth = 4, subsample = 0.8)
-xgboost_component.fit(X, residuals)
 
 lin_xgb_linear_loc = "../../trained_models/lin_xgb_linear_component.pkl"
 lin_xgb_xgb_loc = "../../trained_models/lin_xgb_xgboost_component.pkl"
