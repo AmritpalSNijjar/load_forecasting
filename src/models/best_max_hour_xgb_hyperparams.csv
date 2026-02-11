@@ -1,0 +1,2 @@
+hour,max_depth,n_estimators,min_child_weight,learning_rate,mean_rmse
+12.0,3.0,100.0,10.0,0.1,225.9539389289448
