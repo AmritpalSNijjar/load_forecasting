@@ -43,32 +43,3 @@ df_splits.reset_index(inplace=True)
 
 # Save as CSV
 df_splits.to_csv("../data/splits/split_bounds.csv", index=False)
-
-
-# Extra splits for Day Ahead CV
-splits["split_6"] = {
-    "train_start_date": pd.Timestamp("2020-01-01 00:00:00"),
-    "train_end_date":   pd.Timestamp("2022-01-01 00:00:00"),
-    "val_start_date":   pd.Timestamp("2022-01-01 00:00:00"),
-    "val_end_date":     pd.Timestamp("2022-04-01 00:00:00")
-                    }
-
-splits["split_7"] = {
-    "train_start_date": pd.Timestamp("2020-01-01 00:00:00"),
-    "train_end_date":   pd.Timestamp("2022-04-01 00:00:00"),
-    "val_start_date":   pd.Timestamp("2022-04-01 00:00:00"),
-    "val_end_date":     pd.Timestamp("2022-07-01 00:00:00")
-    }
-
-splits["split_8"] = {
-    "train_start_date": pd.Timestamp("2020-01-01 00:00:00"),
-    "train_end_date":   pd.Timestamp("2022-07-01 00:00:00"),
-    "val_start_date":   pd.Timestamp("2022-07-01 00:00:00"),
-    "val_end_date":     pd.Timestamp("2022-10-01 00:00:00")
-    }
-    
-df_splits = pd.DataFrame.from_dict(splits, orient="index")
-df_splits.index.name = "split"
-df_splits.reset_index(inplace=True)
-
-df_splits.to_csv("../data/splits/split_bounds_day_ahead.csv", index=False)

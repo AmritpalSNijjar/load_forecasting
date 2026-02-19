@@ -97,7 +97,7 @@ for hour in range(0, 24):
 
 # save
 
-linear_regressions_loc = "../../trained_models/day_ahead_lin_xgbs_linear.pkl"
+linear_regressions_loc = "../../trained_models/day_ahead_linears.pkl"
 best_per_hour_model_loc = "../../trained_models/day_ahead_lin_xgbs_best_per_hour_xgbs.pkl"
 best_max_hour_model_loc = "../../trained_models/day_ahead_lin_xgbs_best_max_hour_xgbs.pkl"
 
