@@ -79,13 +79,13 @@ max_load_test = input_df_test["Load"].max()
 
 for model_name in errors_dict["model_name"]:
 
-    train_error = root_mean_squared_error(day_ahead_generate_all_predictions(model_name, models[model_name], input_df_train), input_df_train["Load"])
+    train_error = root_mean_squared_error(day_ahead_generate_all_predictions(model_name, input_df_train), input_df_train["Load"])
 
     validation_error, validation_std = day_ahead_cv_rmse(model_name, input_df_train, splits_df_loc = splits_df_loc)
     
     test_errors = []
     
-    test_error = root_mean_squared_error(day_ahead_generate_all_predictions(model_name, models[model_name], input_df_test), input_df_test["Load"])
+    test_error = root_mean_squared_error(day_ahead_generate_all_predictions(model_name, input_df_test), input_df_test["Load"])
     test_errors.append(test_error)
     
     errors_dict["train_error"].append(train_error)

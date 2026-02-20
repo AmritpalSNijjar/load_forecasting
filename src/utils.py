@@ -1,10 +1,14 @@
 import pandas as pd
 import numpy as np
 
+import pickle
+
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from xgboost import XGBRegressor
+
+from sklearn.metrics import root_mean_squared_error
 
 import sys
 from pathlib import Path
@@ -58,6 +62,52 @@ def simulate_long_forecast(actual_temp_series, std = 1.0, correlation_factor = 0
         last_forecast = new_forecast
     
     return pd.Series(simulated_forecast, index = actual_temp_series.index, name = "temp_simulated")
+
+def load_saved_models(model_name):
+
+        match model_name:
+
+            case "linears":
+                with open(ROOT / "trained_models" / "day_ahead_linears.pkl", 'rb') as file:
+                    day_ahead_linears = pickle.load(file)
+                return [day_ahead_linears]
+                
+            case "ridges":
+                with open(ROOT / "trained_models" / "day_ahead_ridges.pkl", 'rb') as file:
+                    day_ahead_ridges = pickle.load(file)
+                return [day_ahead_ridges]
+                
+            case "lassos":
+                with open(ROOT / "trained_models" / "day_ahead_lassos.pkl", 'rb') as file:
+                    day_ahead_lassos = pickle.load(file)
+                return [day_ahead_lassos]
+                
+            case "xgb_best_per_hour":
+                with open(ROOT / "trained_models" / "day_ahead_xgbs_best_per_hour_xgbs.pkl", 'rb') as file:
+                    day_ahead_xgbs_best_per_hour_xgbs = pickle.load(file)
+                return [day_ahead_xgbs_best_per_hour_xgbs]
+            
+            case "xgb_best_max_hour":
+                with open(ROOT / "trained_models" / "day_ahead_xgbs_best_max_hour_xgbs.pkl", 'rb') as file:
+                    day_ahead_xgbs_best_max_hour_xgbs = pickle.load(file)
+                return [day_ahead_xgbs_best_max_hour_xgbs]
+            
+            case "lin_xgb_best_per_hour":
+                day_ahead_linears = load_saved_models("linears")[0]
+
+                with open(ROOT / "trained_models" / "day_ahead_lin_xgbs_best_per_hour_xgbs.pkl", 'rb') as file:
+                    day_ahead_lin_xgbs_best_per_hour_xgbs = pickle.load(file)
+                
+                return [day_ahead_linears, day_ahead_lin_xgbs_best_per_hour_xgbs]
+
+            case "lin_xgb_best_max_hour": 
+                day_ahead_linears = load_saved_models("linears")[0]
+
+                with open(ROOT / "trained_models" / "day_ahead_lin_xgbs_best_max_hour_xgbs.pkl", 'rb') as file:
+                    day_ahead_lin_xgbs_best_max_hour_xgbs = pickle.load(file)
+
+                return [day_ahead_linears, day_ahead_lin_xgbs_best_max_hour_xgbs]
+
 
 def day_ahead_cv_rmse(model_name, input_df, splits_df_loc):
 
@@ -180,7 +230,7 @@ def day_ahead_cv_rmse(model_name, input_df, splits_df_loc):
         
     return np.mean(split_rmses), np.std(split_rmses)
 
-def day_ahead_generate_all_predictions(model_name, models, input_df):
+def day_ahead_generate_all_predictions(model_name, input_df):
 
     is_lin_xgb = False
     
@@ -190,6 +240,8 @@ def day_ahead_generate_all_predictions(model_name, models, input_df):
         is_lin_xgb = True
 
     preds_list = []
+
+    models = load_saved_models(model_name)
 
     for hour in range(24):
         hour_mask = input_df["Hour"] == hour
@@ -213,4 +265,123 @@ def day_ahead_generate_all_predictions(model_name, models, input_df):
     all_preds_df = pd.concat(preds_list)
     all_preds_df = all_preds_df.sort_index()
     return all_preds_df["prediction"]
+
+
+temp_uncertainties = [i for i in range (1, 11)]
+
+model_names = ["linears", "ridges", "lassos", "xgb_best_per_hour", "xgb_best_max_hour", "lin_xgb_best_per_hour", "lin_xgb_best_max_hour"]
+
+def monte_carlo_temp_sensitivity( input_df_test, model_names, temp_uncertainties, n_simulations=100, base_t=60, filter_fn=None):
+    
+    temp_uncertainties_errors_dict = {
+        "model_name": [],
+        "temp_uncertainty": [],
+        "test_error": [],
+        "test_std": []
+    }
+    
+    input_df_test["timestamp"] = pd.to_datetime(input_df_test["timestamp"])
+
+
+    test_df_component_1 = input_df_test[["timestamp", "Load", "Hour"]]
+    test_df_component_2 = input_df_test[["temp_actual_lag_24h", "Load_lag_24h", "Load_lag_48h", "is_weekend", "is_notable_day"]]
+
+    print("=" * 80)
+    print("MONTE CARLO SENSITIVITY ANALYSIS: LOAD FORECAST VS TEMPERATURE UNCERTAINTY")
+    print(f"Total Models: {len(model_names)} | Uncertainty Levels: {len(temp_uncertainties)} | Simulations per Level: {n_simulations}")
+    print("=" * 80)
+
+    for model_idx, model_name in enumerate(model_names, 1):
+
+        # Model performance on test set with actual temperatures
+
+        if filter_fn is not None:
+            mask = filter_fn(input_df_test)
+            df_eval = input_df_test.loc[mask]
+        else:
+            df_eval = input_df_test
+
+        if len(df_eval) == 0:
+            continue
+
+        preds = day_ahead_generate_all_predictions(model_name, df_eval)
+        test_error_actual = root_mean_squared_error(preds, df_eval["Load"])
+
+        temp_uncertainties_errors_dict["model_name"].append(model_name)
+        temp_uncertainties_errors_dict["temp_uncertainty"].append(0)
+        temp_uncertainties_errors_dict["test_error"].append(test_error_actual)
+        temp_uncertainties_errors_dict["test_std"].append(0.0)
+
+        print("\n" + "-" * 80)
+        print(f"[MODEL {model_idx}/{len(model_names)}] Evaluating: {model_name}")
+        print("-" * 80)
+
+        for unc_idx, temp_uncertainty in enumerate(temp_uncertainties, 1):
+
+            print(
+                f"\n  → Temperature Uncertainty σ = {temp_uncertainty}°F "
+                f"({unc_idx}/{len(temp_uncertainties)}) | Running {n_simulations} Monte Carlo sims..."
+            )
+
+            temp_uncertainties_errors_dict["model_name"].append(model_name)
+            temp_uncertainties_errors_dict["temp_uncertainty"].append(temp_uncertainty)
+
+            rmse_list = []
+
+            for i in range(n_simulations):
+                simulated_temp = simulate_long_forecast(
+                    input_df_test["temp_actual"],
+                    std=temp_uncertainty,
+                    correlation_factor=0.5
+                )
+
+                test_df_simulated = pd.DataFrame(simulated_temp)
+                test_df_simulated["temp_6h_simulated"] = test_df_simulated["temp_simulated"].rolling(6).mean()
+                test_df_simulated = test_df_simulated.dropna()
+
+                test_df_simulated["CDH_simulated"] = (test_df_simulated["temp_simulated"] - base_t).clip(lower=0)
+                test_df_simulated["HDH_simulated"] = (base_t - test_df_simulated["temp_simulated"]).clip(lower=0)
+
+                valid_index = test_df_simulated.index
+
+                input_df_simulated = pd.concat(
+                    [
+                        test_df_component_1.loc[valid_index],
+                        test_df_simulated,
+                        test_df_component_2.loc[valid_index],
+                    ],
+                    axis=1,
+                )
+
+                input_df_simulated = input_df_simulated.rename(
+                    columns={
+                        "temp_simulated": "temp_actual",
+                        "temp_6h_simulated": "temp_6h_actual",
+                        "CDH_simulated": "CDH_actual",
+                        "HDH_simulated": "HDH_actual",
+                    }
+                )
+
+                if filter_fn is not None:
+                    mask = filter_fn(input_df_simulated)
+                    df_eval = input_df_simulated.loc[mask]
+                else:
+                    df_eval = input_df_simulated
+
+                if len(df_eval) == 0:
+                    continue
+
+                preds = day_ahead_generate_all_predictions(model_name, df_eval)
+                rmse = root_mean_squared_error(preds, df_eval["Load"])
+                rmse_list.append(rmse)
+
+            temp_uncertainties_errors_dict["test_error"].append(np.mean(rmse_list))
+            temp_uncertainties_errors_dict["test_std"].append(np.std(rmse_list))
+
+            print(
+                f"  ✔ Completed σ = {temp_uncertainty}°F | "
+                f"Mean RMSE: {np.mean(rmse_list):.4f} | Std: {np.std(rmse_list):.4f}"
+            )
+
+    return pd.DataFrame(temp_uncertainties_errors_dict)
 
