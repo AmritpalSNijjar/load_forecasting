@@ -46,25 +46,65 @@ Three model classes were evaluated, each trained as 24 separate hourly models to
 - Focusing on the top 10% of highest load hours revealed dramatic shifts: XGBoost's RMSE increased roughly 78%, from 155.9 MW to 277.4 MW, while Linear Regression remained comparatively stable
 - These results highlight a trade-off between baseline accuracy and robustness: more flexible models achieve lower error under perfect inputs but are more sensitive to temperature forecast noise
 
-![Model Performance vs Temperature Forecast Uncertainty](figures/baseline_top10_rmse_uncertainty_plot.png)
+![Model Performance vs Temperature Forecast Uncertainty](plots/baseline_top10_rmse_uncertainty_plot.png)
 
 ## Repository Structure
 
+The project separates exploratory analysis and prototyping (notebooks) from reproducible execution (src scripts). The notebooks document the thinking and iteration behind each stage. The src scripts are the cleaned, runnable versions that reproduce all results from the terminal.
+
 ```
 load_repo/
-├── data/                        # Hourly load and weather data, San Diego 2020-2022
-├── notebooks/                   # Analysis notebooks
-├── figures/                     # Output figures
-├── report.pdf                   # Full project report
-├── requirements.txt             # Python dependencies
+├── data/
+│   ├── raw/                         # Raw load and weather data (Train.xlsx, Test.xlsx)
+│   ├── processed/                   # Feature-engineered datasets for each model stage
+│   ├── results/                     # Monte Carlo simulation outputs and error CSVs
+│   └── splits/                      # Train/validation/test split indices
+│
+├── notebooks/
+│   ├── eda.ipynb                    # Exploratory analysis: load profiles, temperature relationships, autocorrelation
+│   ├── feature_design.ipynb         # Feature engineering and nowcast baseline for feature selection
+│   ├── day_ahead_modelling.ipynb    # Hyperparameter tuning for XGBoost and hybrid models
+│   ├── day_ahead_model_analysis.ipynb  # Model evaluation, Monte Carlo prototyping, plot development
+│   └── model_analysis.ipynb         # Nowcast model evaluation and highest load day analysis
+│
+├── src/
+│   ├── split_construction.py        # Constructs train/validation/test split indices
+│   ├── features/                    # Feature engineering scripts for each model stage
+│   ├── models/                      # Model training scripts and saved hyperparameter configs
+│   └── results/                     # Monte Carlo simulations, conditional evaluation, plot generation
+│
+├── trained_models/                  # Serialized trained model objects (.pkl)
+├── plots/                           # All output figures
+├── report.pdf                       # Full project report
+├── requirements.txt                 # Python dependencies
 └── README.md
+```
+
+## Reproducing Results
+
+All results can be reproduced by running the src scripts in order from the terminal:
+
+```bash
+# 1. Construct train/validation/test splits
+python src/split_construction.py
+
+# 2. Build features
+python src/features/build_day_ahead_features.py
+
+# 3. Train models (example)
+python src/models/day_ahead_lin_xgb.py
+
+# 4. Run Monte Carlo uncertainty analysis and generate plots
+python src/results/day_ahead_temp_uncertainty_filter_none.py
+python src/results/create_plots.py
 ```
 
 ## Requirements
 
-Install dependencies with:
-
 ```bash
+python -m venv env
+source env/bin/activate        # Mac/Linux
+env\Scripts\activate           # Windows
 pip install -r requirements.txt
 ```
 
