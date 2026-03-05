@@ -176,7 +176,7 @@ for i, season_key in enumerate(['Winter','Summer']):
     ax.tick_params(axis='both', labelsize=tick_font)
 
 handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='center right', bbox_to_anchor=(0.27, 0.65),
+fig.legend(handles, labels, loc='center right', bbox_to_anchor=(0.17, 0.67),
            title='Models', fontsize=legend_font, title_fontsize=legend_font)
 
 
