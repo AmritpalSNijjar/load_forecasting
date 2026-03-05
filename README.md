@@ -16,7 +16,7 @@ In operational practice, day-ahead load forecasts rely on weather forecasts rath
 
 ## Dataset
 
-Data was obtained from the **PG&E 2025 Energy Analytics Challenge** and consists of hourly electricity load and weather observations for the San Diego, California region spanning 2020–2022. The dataset is publicly available and included in this repository under `/data`.
+Data was obtained from the **PG&E 2025 Energy Analytics Challenge** and consists of hourly electricity load and weather observations for the San Diego, California region spanning 2020–2022. The dataset is [publicly available](https://zenodo.org/records/17085273) and included in this repository under `/data/raw/`.
 
 Features used:
 - Cyclical hour encodings, weekend and notable-day indicators
