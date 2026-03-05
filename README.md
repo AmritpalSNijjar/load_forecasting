@@ -92,11 +92,6 @@ This will create a virtual environment, install dependencies, build features, tr
 
 > **Note:** The Monte Carlo simulations run 100 simulations across multiple models and uncertainty levels. The hourly filter script repeats this for all 24 hours and can take a while to complete. All the simulations should complete in under half an hour.
 
-To run the hourly simulation separately after the main script:
-
-```bash
-python -m src.results.day_ahead_temp_uncertainty_filter_hour
-```
 
 If you prefer to run steps manually, the correct order is:
 
