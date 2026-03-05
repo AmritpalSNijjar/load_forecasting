@@ -180,30 +180,6 @@ def complete_df_transformer(raw_data_df):
 
     return df_transformed
 
-def simulate_long_forecast(actual_temp_series, base_std = 1.0, max_std = 5.0, correlation_factor = 0.5):
-    
-    simulated_forecast = []
-    last_forecast = actual_temp_series.iloc[0]
-    
-    hours_in_day = 24
-    
-    for i, actual in enumerate(actual_temp_series):
-        hour_of_day = i % hours_in_day
-        
-        # Scale uncertainty linearly within the day
-        hour_std = base_std + (max_std - base_std) * (hour_of_day / (hours_in_day - 1))
-        
-        # Random error for this hour
-        error = np.random.normal(loc = 0, scale = hour_std)
-        
-        # Forecast combines correlation with last forecast and random error
-        new_forecast = last_forecast + correlation_factor * (actual - last_forecast) + error
-        
-        simulated_forecast.append(new_forecast)
-        last_forecast = new_forecast
-    
-    return pd.Series(simulated_forecast, index = actual_temp_series.index)
-
 def day_ahead_df_transformer(raw_data_df):
 
     YEARS_DICT = {1:2020, 2:2021, 3:2022}
@@ -229,11 +205,6 @@ def day_ahead_df_transformer(raw_data_df):
     # Average the temperature measurements.
     df_transformed["temp_actual"] = df_transformed[TEMP_COLS].mean(axis=1)
 
-    # Generate n_temp_forecasts=10 simulated temperature forecasts.
-    for i in range(n_temp_forecasts):
-        temp_forecast = simulate_long_forecast(df_transformed["temp_actual"]).rename(f"temp_forecast_{i + 1}")
-        df_transformed = pd.concat([df_transformed, temp_forecast], axis = 1)
-
     # Create timestamps.
     df_transformed['Year'] = df_transformed['Year'].map(YEARS_DICT)
     df_transformed['Hour'] = df_transformed['Hour'] - 1
@@ -248,14 +219,6 @@ def day_ahead_df_transformer(raw_data_df):
     # Cooling & Heating Degrees.
     df_transformed["CDH_actual"] = (df_transformed["temp_actual"] - base_t).clip(lower=0)
     df_transformed["HDH_actual"] = (base_t - df_transformed["temp_actual"]).clip(lower=0) 
-    
-    # Average of the temperature over the last 6 hours and Cooling & Heating Degrees for all 10 simulated teperature forecasts.
-    for i in range(n_temp_forecasts):
-        df_transformed[f"temp_6h_forecast_{i + 1}"] = df_transformed[f"temp_forecast_{i + 1}"].rolling(6).mean()
-
-        df_transformed[f"CDH_forecast_{i + 1}"] = (df_transformed[f"temp_forecast_{i + 1}"] - base_t).clip(lower=0)
-        df_transformed[f"HDH_forecast_{i + 1}"] = (base_t - df_transformed[f"temp_forecast_{i + 1}"]).clip(lower=0) 
-
 
     # Ensure chronological ordering.
     df_transformed = df_transformed.sort_values("timestamp")

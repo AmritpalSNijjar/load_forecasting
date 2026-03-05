@@ -1,6 +1,9 @@
 # Initial testing splits
 
 import pandas as pd
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
 
 # Define splits
 splits = {
@@ -41,5 +44,4 @@ df_splits = pd.DataFrame.from_dict(splits, orient="index")
 df_splits.index.name = "split"
 df_splits.reset_index(inplace=True)
 
-# Save as CSV
-df_splits.to_csv("../data/splits/split_bounds.csv", index=False)
+df_splits.to_csv(ROOT / "data" / "splits" / "split_bounds.csv", index=False)

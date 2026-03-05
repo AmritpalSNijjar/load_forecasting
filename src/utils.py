@@ -35,12 +35,6 @@ best_per_hour_xgb_hyperparams = pd.read_csv(ROOT / "src" / "models" / "best_per_
 best_max_hour_xgb_hyperparams = pd.read_csv(ROOT / "src" / "models" / "best_max_hour_xgb_hyperparams.csv")
 
 
-# TO DO: Save the hyperparams somewhere, instead of hard-coding here.
-def get_ridge_alpha():
-    return 32
-
-def get_lasso_alpha():
-    return 3.6
 
 def simulate_long_forecast(actual_temp_series, std = 1.0, correlation_factor = 0.5):
     
@@ -71,16 +65,6 @@ def load_saved_models(model_name):
                 with open(ROOT / "trained_models" / "day_ahead_linears.pkl", 'rb') as file:
                     day_ahead_linears = pickle.load(file)
                 return [day_ahead_linears]
-                
-            case "ridges":
-                with open(ROOT / "trained_models" / "day_ahead_ridges.pkl", 'rb') as file:
-                    day_ahead_ridges = pickle.load(file)
-                return [day_ahead_ridges]
-                
-            case "lassos":
-                with open(ROOT / "trained_models" / "day_ahead_lassos.pkl", 'rb') as file:
-                    day_ahead_lassos = pickle.load(file)
-                return [day_ahead_lassos]
                 
             case "xgb_best_per_hour":
                 with open(ROOT / "trained_models" / "day_ahead_xgbs_best_per_hour_xgbs.pkl", 'rb') as file:
@@ -116,12 +100,6 @@ def day_ahead_cv_rmse(model_name, input_df, splits_df_loc):
     match model_name:
         case "linears":
             models = [LinearRegression() for hour in range(0, 24)]
-            
-        case "ridges":
-            models = [Ridge(alpha = get_ridge_alpha()) for hour in range(0, 24)]
-            
-        case "lassos":
-            models = [Lasso(alpha = get_lasso_alpha()) for hour in range(0, 24)]
             
         case "xgb_best_per_hour":
             models = [XGBRegressor(objective='reg:squarederror', 

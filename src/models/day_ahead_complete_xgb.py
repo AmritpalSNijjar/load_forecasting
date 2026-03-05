@@ -3,7 +3,16 @@ import numpy as np
 from xgboost import XGBRegressor
 import pickle
 
-day_ahead_train_loc = "../../data/processed/day_ahead_train.csv"
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+
+day_ahead_train_loc = ROOT / "data" / "processed" / "day_ahead_train.csv"
 
 day_ahead_train_df = pd.read_csv(day_ahead_train_loc)
 
@@ -11,7 +20,7 @@ features_to_train = ["temp_actual", "temp_6h_actual", "CDH_actual", "HDH_actual"
 
 # best_per_hour 
 
-best_per_hour_hyperparams = pd.read_csv("best_per_hour_xgb_hyperparams.csv")
+best_per_hour_hyperparams = pd.read_csv(ROOT / "src" / "models" / "best_per_hour_xgb_hyperparams.csv")
 
 best_per_hour_xgbs = []
 
@@ -35,7 +44,7 @@ for hour in range(0, 24):
 
 # best_max_hour 
 
-best_max_hour_hyperparams = pd.read_csv("best_max_hour_xgb_hyperparams.csv")
+best_max_hour_hyperparams = pd.read_csv(ROOT / "src" / "models" / "best_max_hour_xgb_hyperparams.csv")
 
 best_max_hour_xgbs = []
 
@@ -58,8 +67,8 @@ for hour in range(0, 24):
 
 # save
 
-best_per_hour_model_loc = "../../trained_models/day_ahead_xgbs_best_per_hour_xgbs.pkl"
-best_max_hour_model_loc = "../../trained_models/day_ahead_xgbs_best_max_hour_xgbs.pkl"
+best_per_hour_model_loc = ROOT / "trained_models" / "day_ahead_xgbs_best_per_hour_xgbs.pkl"
+best_max_hour_model_loc = ROOT / "trained_models" / "day_ahead_xgbs_best_max_hour_xgbs.pkl"
 
 with open(best_per_hour_model_loc, 'wb') as file:
     pickle.dump(best_per_hour_xgbs, file)
