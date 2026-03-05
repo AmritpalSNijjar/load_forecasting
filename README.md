@@ -82,30 +82,58 @@ load_repo/
 
 ## Reproducing Results
 
-All results can be reproduced by running the src scripts in order from the terminal:
+A `reproduce.sh` script is provided to run the full pipeline from a clean state:
 
 ```bash
-# 1. Construct train/validation/test splits
-python src/split_construction.py
+bash reproduce.sh
+```
 
-# 2. Build features
-python src/features/build_day_ahead_features.py
+This will create a virtual environment, install dependencies, build features, train models, run Monte Carlo simulations, and generate all plots in order.
 
-# 3. Train models (example)
-python src/models/day_ahead_lin_xgb.py
+> **Note:** The Monte Carlo simulations run 100 simulations across multiple models and uncertainty levels. The hourly filter script repeats this for all 24 hours and can take several hours to complete. All other simulations should complete in under an hour.
 
-# 4. Run Monte Carlo uncertainty analysis and generate plots
-python src/results/day_ahead_temp_uncertainty_filter_none.py
-python src/results/create_plots.py
+To run the hourly simulation separately after the main script:
+
+```bash
+python -m src.results.day_ahead_temp_uncertainty_filter_hour
+```
+
+If you prefer to run steps manually, the correct order is:
+
+```bash
+# 1. Build train/validation/test split indices
+python -m src.split_construction
+
+# 2. Engineer features from raw data
+python -m src.features.build_day_ahead_features
+
+# 3. Train models
+python -m src.models.day_ahead_lin_xgb
+python -m src.models.day_ahead_complete_xgb
+
+# 4. Evaluate model errors on train, validation, and test sets
+python -m src.results.day_ahead_results
+
+# 5. Run Monte Carlo temperature uncertainty simulations
+python -m src.results.day_ahead_temp_uncertainty_filter_none
+python -m src.results.day_ahead_temp_uncertainty_filter_top_10_pct_load
+python -m src.results.day_ahead_temp_uncertainty_filter_season
+python -m src.results.day_ahead_temp_uncertainty_filter_hour  # long runtime
+
+# 6. Generate all plots
+python -m src.results.create_plots
 ```
 
 ## Requirements
 
-```bash
-python -m venv env
-source env/bin/activate        # Mac/Linux
-env\Scripts\activate           # Windows
-pip install -r requirements.txt
+```
+matplotlib==3.10.8
+numpy==2.4.2
+openpyxl==3.1.5
+pandas==3.0.1
+scikit_learn==1.8.0
+seaborn==0.13.2
+xgboost==3.2.0
 ```
 
 ## Limitations
