@@ -38,7 +38,7 @@ input_df_test = df_test[["timestamp", "Load", "Hour"] + ["temp_actual", "temp_6h
 
 temp_uncertainties = [i for i in range (1, 11)]
 
-model_names = ["linears", "ridges", "lassos", "xgb_best_per_hour", "xgb_best_max_hour", "lin_xgb_best_per_hour", "lin_xgb_best_max_hour"]
+model_names = ["linears", "xgb_best_per_hour", "xgb_best_max_hour", "lin_xgb_best_per_hour", "lin_xgb_best_max_hour"]
 
 weekend_filter = lambda df: df["is_weekend"] == 1
 weekday_filter = lambda df: df["is_weekend"] == 0

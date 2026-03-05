@@ -36,9 +36,9 @@ input_df_train = df_train[["timestamp", "Load", "Hour"] + ["temp_actual", "temp_
 input_df_test = df_test[["timestamp", "Load", "Hour"] + ["temp_actual", "temp_6h_actual", "CDH_actual", "HDH_actual", "temp_actual_lag_24h", "Load_lag_24h", "Load_lag_48h", "is_weekend", "is_notable_day"]
 ]
 
-temp_uncertainties = [i for i in range (1, 11)]
+temp_uncertainties = [i for i in range (1, 6)]
 
-model_names = ["linears", "ridges", "lassos", "xgb_best_per_hour", "xgb_best_max_hour", "lin_xgb_best_per_hour", "lin_xgb_best_max_hour"]
+model_names = ["linears", "xgb_best_per_hour", "xgb_best_max_hour", "lin_xgb_best_per_hour", "lin_xgb_best_max_hour"]
 
 summer_months = [6, 7, 8, 9]
 winter_months = [11, 12, 1, 2]

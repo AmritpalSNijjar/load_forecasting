@@ -22,12 +22,12 @@ hour_df = pd.read_csv(ROOT / "data" / "results" / "day_ahead_temp_uncertainty_fi
 
 model_class_names = ["linears", "xgb_best_per_hour", "lin_xgb_best_per_hour"]
 model_class_titles = {
-    "linears": "Linear Regression",
-    "xgb_best_per_hour": "XGBoost (Best Hourly)",
-    "lin_xgb_best_per_hour": "Linear + XGB Residuals"
+    "linears": "Linear",
+    "xgb_best_per_hour": "XGBoost",
+    "lin_xgb_best_per_hour": "Hybrid"
 }
 
-title_font = 16
+title_font = 14
 label_font = 14
 tick_font = 12
 legend_font = 12
@@ -67,7 +67,6 @@ bars_total = ax.bar(x - width/2, total_rmse_vals, width, label='All Hours', colo
 bars_top10 = ax.bar(x + width/2, top10_rmse_vals, width, label='Top 10% Load', color=bar_colors[1])
 
 ax.set_ylabel('RMSE (MW)', fontsize=label_font)
-ax.set_title("RMSE Comparison Using True Future Temperatures\n(All Hours vs Top 10% Load)", fontsize=14)
 ax.set_xticks(x)
 ax.set_xticklabels([model_class_titles[m] for m in model_class_names], fontsize=tick_font)
 ax.legend(fontsize=legend_font)
@@ -81,6 +80,7 @@ for b in bars_total + bars_top10:
                 textcoords="offset points",
                 ha='center', va='bottom')
 
+plt.suptitle("RMSE Comparison Under Ideal Conditions\n(All Hours vs Top 10% Load)", fontsize=title_font + 2)
 plt.tight_layout()
 fig.savefig(ROOT / "plots" / "baseline_top10_rmse_bar.png", dpi=300, bbox_inches="tight")
 
@@ -102,20 +102,52 @@ for i, (rmse_df, title) in enumerate([(test_rmse, "Total RMSE"), (top_10_pct_loa
                             df['test_error'] - df['test_std'],
                             df['test_error'] + df['test_std'],
                             alpha=alpha_std, color=palette[j])
-    ax.set_title(f"{title} vs Temperature Uncertainty", fontsize=14)
+    ax.set_title(f"{title} vs Temperature Uncertainty", fontsize=title_font)
     ax.set_xlabel("Temperature Uncertainty (°F)", fontsize=label_font)
-    ax.set_ylabel("RMSE (MW)", fontsize=label_font)
+    if i==0:
+        ax.set_ylabel("RMSE (MW)", fontsize=label_font)
     ax.set_xlim(0, temp_unc_limit)
-    ax.set_ylim(0, 500)
+    ax.set_ylim(0, 400)
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='both', labelsize=tick_font)
 
 handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='center right', bbox_to_anchor=(1.08, 0.5),
+fig.legend(handles, labels, loc='center right', bbox_to_anchor=(0.17, 0.715),
            title='Models', fontsize=legend_font, title_fontsize=legend_font)
+
+plt.suptitle("Model Performance vs Temperature Forecast Uncertainty (2022 Test Set)", fontsize=title_font+2)
 plt.tight_layout(rect=[0,0,0.88,1])
 fig.savefig(ROOT / "plots" / "baseline_top10_rmse_uncertainty_plot.png", dpi=300, bbox_inches="tight")
 
+# Isolate Top 10% Load RMSE plot
+
+fig, ax = plt.subplots(figsize=(8,5))  # single plot, adjust size as needed
+
+for j, model_name in enumerate(model_class_names):
+    df = top_10_pct_load_df[top_10_pct_load_df['model_name']==model_name].copy()
+    df = df[df['temp_uncertainty'] <= temp_unc_limit].sort_values('temp_uncertainty')
+    
+    ax.plot(df['temp_uncertainty'], df['test_error'],
+            marker='o', linewidth=line_width, markersize=marker_size,
+            color=palette[j], label=model_class_titles[model_name])
+    
+    if 'test_std' in df.columns:
+        ax.fill_between(df['temp_uncertainty'],
+                        df['test_error'] - df['test_std'],
+                        df['test_error'] + df['test_std'],
+                        alpha=alpha_std, color=palette[j])
+
+ax.set_title("RMSE vs Temperature Uncertainty over Top 10% Load Hours", fontsize=title_font)
+ax.set_xlabel("Temperature Uncertainty (°F)", fontsize=label_font)
+ax.set_ylabel("RMSE (MW)", fontsize=label_font)
+ax.set_xlim(0, temp_unc_limit)
+ax.set_ylim(0, 400)
+ax.grid(True, alpha=0.3)
+ax.tick_params(axis='both', labelsize=tick_font)
+ax.legend(fontsize=legend_font, loc="lower right")
+
+plt.tight_layout()
+fig.savefig(ROOT / "plots" / "top10_load_rmse_uncertainty_plot.png", dpi=300, bbox_inches="tight")
 
 # Seasonal Absolute RMSE
 
@@ -144,10 +176,11 @@ for i, season_key in enumerate(['Winter','Summer']):
     ax.tick_params(axis='both', labelsize=tick_font)
 
 handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='center right', bbox_to_anchor=(1.08, 0.5),
+fig.legend(handles, labels, loc='center right', bbox_to_anchor=(0.27, 0.65),
            title='Models', fontsize=legend_font, title_fontsize=legend_font)
-plt.suptitle("Model Performance Across Seasons", fontsize=title_font+2)
 
+
+plt.suptitle("Model Performance vs Season (2022 Test Set)", fontsize=title_font+2)
 plt.tight_layout(rect=[0,0,0.88,0.95])
 fig.savefig(ROOT / "plots" / "seasonal_rmse_uncertainty_plot.png", dpi=300, bbox_inches="tight")
 
@@ -165,51 +198,57 @@ for i, model_name in enumerate(model_class_names):
     heatmap_data = df.pivot(index='Hour', columns='temp_uncertainty', values='test_error')
     sns.heatmap(heatmap_data, ax=ax, cmap='viridis', annot=False,
                 vmin=vmin, vmax=vmax, cbar_kws={'label':'RMSE (MW)'})
-    ax.set_title(model_class_titles[model_name])
-    ax.set_xlabel("Temperature Uncertainty (°F)")
+
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=14)  # Tick labels
+    cbar.set_label('RMSE Increase (MW)', fontsize=14)  # Label
+
+    ax.set_title(model_class_titles[model_name], fontsize = 17)
+    ax.set_xlabel("Temperature Uncertainty (°F)", fontsize = 14)
     if i == 0:
-        ax.set_ylabel("Hour of Day")
+        ax.set_ylabel("Hour of Day", fontsize = 14)
     else:
         ax.set_ylabel("")
-plt.suptitle("Hourly Model Performance Across Temperature Uncertainty", fontsize=20, y=1.05)
+plt.suptitle("Hourly Model Performance Across Temperature Uncertainty", fontsize=title_font + 8, y=1.05)
 plt.tight_layout()
 
 fig.savefig(ROOT / "plots" / "hourly_rmse_uncertainty_heatmap.png", dpi=300, bbox_inches="tight")
 
 
-# ------------------------
-# 5️⃣ Hourly RMSE Increase Heatmap
-# ------------------------
 
-# Compute baseline RMSE per model & hour (temp_uncertainty=0)
+# Hourly RMSE Percentage Increase Heatmap
 baseline = hour_df[hour_df['temp_uncertainty']==0][['model_name','Hour','test_error']].rename(columns={'test_error':'baseline_rmse'})
 
-# Merge baseline into full hourly df
 hour_rel_df = hour_df.merge(baseline, on=['model_name','Hour'], how='left')
 
-# Compute absolute RMSE increase
-hour_rel_df['rmse_increase'] = hour_rel_df['test_error'] - hour_rel_df['baseline_rmse']
-
-# Optional: compute percent increase
-# hour_rel_df['rmse_pct_increase'] = 100 * (hour_rel_df['test_error'] - hour_rel_df['baseline_rmse']) / hour_rel_df['baseline_rmse']
+# Compute percentage increase
+hour_rel_df['rmse_pct_increase'] = 100 * (hour_rel_df['test_error'] - hour_rel_df['baseline_rmse']) / hour_rel_df['baseline_rmse']
 
 hour_rel_df_filtered = hour_rel_df[hour_rel_df['temp_uncertainty']<=temp_unc_limit]
-vmin = hour_rel_df_filtered['rmse_increase'].min()
-vmax = hour_rel_df_filtered['rmse_increase'].max()
+
+vmin = hour_rel_df_filtered['rmse_pct_increase'].min()
+vmax = hour_rel_df_filtered['rmse_pct_increase'].max()
 
 fig, axes = plt.subplots(1, len(model_class_names), figsize=(18,6), sharey=True)
 for i, model_name in enumerate(model_class_names):
     ax = axes[i]
     df = hour_rel_df_filtered[hour_rel_df_filtered['model_name']==model_name].copy()
-    heatmap_data = df.pivot(index='Hour', columns='temp_uncertainty', values='rmse_increase')
+    heatmap_data = df.pivot(index='Hour', columns='temp_uncertainty', values='rmse_pct_increase')
+    
     sns.heatmap(heatmap_data, ax=ax, cmap='Reds', annot=False,
-                vmin=vmin, vmax=vmax, cbar_kws={'label':'RMSE Increase (MW)'})
-    ax.set_title(model_class_titles[model_name])
-    ax.set_xlabel("Temperature Uncertainty (°F)")
+                vmin=vmin, vmax=vmax, cbar_kws={'label':'RMSE Increase (%)'})
+
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=14)  # Tick labels
+    cbar.set_label('RMSE Increase (%)', fontsize=14)  # Label
+
+    ax.set_title(model_class_titles[model_name], fontsize=17)
+    ax.set_xlabel("Temperature Uncertainty (°F)", fontsize=14)
     if i == 0:
-        ax.set_ylabel("Hour of Day")
+        ax.set_ylabel("Hour of Day", fontsize=14)
     else:
         ax.set_ylabel("")
-plt.suptitle("Hourly Fragility to Temperature Uncertainty", fontsize=20, y=1.05)
+
+plt.suptitle("Hourly Fragility to Temperature Uncertainty (Percentage Increase from Baseline)", fontsize=title_font + 8, y=1.05)
 plt.tight_layout()
-fig.savefig(ROOT / "plots" / "hourly_fragility_rmse_uncertainty_heatmap.png", dpi=300, bbox_inches="tight")
+fig.savefig(ROOT / "plots" / "hourly_fragility_pct_rmse_uncertainty_heatmap.png", dpi=300, bbox_inches="tight")
