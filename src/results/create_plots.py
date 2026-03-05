@@ -151,7 +151,7 @@ fig.savefig(ROOT / "plots" / "top10_load_rmse_uncertainty_plot.png", dpi=300, bb
 
 # Seasonal Absolute RMSE
 
-fig, axes = plt.subplots(1, 2, figsize=(14,5), sharey=True)
+fig, axes = plt.subplots(1, 2, figsize=(14,5), sharex=True, sharey=True)
 
 for i, season_key in enumerate(['Winter','Summer']):
     ax = axes[i]
@@ -169,19 +169,20 @@ for i, season_key in enumerate(['Winter','Summer']):
                             alpha=alpha_std, color=palette[j])
     ax.set_title(f"{season_key} Absolute RMSE", fontsize=title_font)
     ax.set_xlabel("Temperature Uncertainty (°F)", fontsize=label_font)
-    ax.set_ylabel("RMSE (MW)", fontsize=label_font)
+    if i==0:
+        ax.set_ylabel("RMSE (MW)", fontsize=label_font)
     ax.set_xlim(0, temp_unc_limit)
-    ax.set_ylim(0, 500)
+    ax.set_ylim(0, 400)
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='both', labelsize=tick_font)
 
 handles, labels = axes[0].get_legend_handles_labels()
-fig.legend(handles, labels, loc='center right', bbox_to_anchor=(0.17, 0.67),
+fig.legend(handles, labels, loc='center right', bbox_to_anchor=(0.17, 0.715),
            title='Models', fontsize=legend_font, title_fontsize=legend_font)
 
 
 plt.suptitle("Model Performance vs Season (2022 Test Set)", fontsize=title_font+2)
-plt.tight_layout(rect=[0,0,0.88,0.95])
+plt.tight_layout(rect=[0,0,0.88,1])
 fig.savefig(ROOT / "plots" / "seasonal_rmse_uncertainty_plot.png", dpi=300, bbox_inches="tight")
 
 
